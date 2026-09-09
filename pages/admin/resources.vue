@@ -1,6 +1,9 @@
-<template>
-  <section>
-    <h1>Resource management</h1>
-    <!-- TODO: Resource yaratish/tahrirlash hamda enabled/disabled boshqaruvi. -->
-  </section>
-</template>
+<script setup lang="ts">
+import { mockResources } from '~/services/mock-data'
+import type { Resource } from '~/types/resource'
+definePageMeta({ layout: 'admin' })
+const items = ref<Resource[]>(mockResources.map((item) => ({ ...item }))); const name = ref(''); const type = ref<Resource['type']>('desk'); const capacity = ref(1); const cents = ref(1000); const validation = ref<string | null>(null); const success = ref<string | null>(null)
+function create(): void { if (!name.value.trim() || capacity.value < 1 || !Number.isInteger(cents.value) || cents.value < 0) { validation.value = 'Name, positive capacity, and integer cents are required.'; return }; items.value.push({ id: `mock-resource-${Date.now()}`, name: name.value.trim(), type: type.value, capacity: capacity.value, hourlyPriceMinor: cents.value, currency: 'USD', operationalStatus: 'enabled', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }); name.value = ''; success.value = 'Mock resource created.'; validation.value = null }
+function toggle(item: Resource): void { item.operationalStatus = item.operationalStatus === 'enabled' ? 'disabled' : 'enabled'; success.value = `${item.name} is now ${item.operationalStatus}.` }
+</script>
+<template><main class="mx-auto max-w-6xl px-6 py-10"><h1 class="text-3xl font-bold">Resource management</h1><p class="mt-2 text-slate-600">Local mock mode supports create and enable/disable preview.</p><p v-if="validation" class="mt-4 rounded bg-amber-50 p-3 text-amber-800">{{ validation }}</p><p v-if="success" class="mt-4 rounded bg-emerald-50 p-3 text-emerald-700">{{ success }}</p><form class="mt-6 grid gap-3 rounded border p-4 sm:grid-cols-5" @submit.prevent="create"><input v-model="name" class="rounded border p-2" placeholder="Resource name"><select v-model="type" class="rounded border p-2"><option value="desk">Desk</option><option value="meeting_room">Meeting room</option><option value="private_office">Private office</option></select><input v-model.number="capacity" class="rounded border p-2" type="number" min="1" placeholder="Capacity"><input v-model.number="cents" class="rounded border p-2" type="number" min="0" placeholder="Cents/hour"><button class="rounded bg-indigo-600 px-4 py-2 text-white">Create</button></form><div v-if="!items.length" class="mt-6 rounded border border-dashed p-8 text-center">No resources found.</div><table v-else class="mt-6 w-full text-left"><thead><tr><th>Name</th><th>Type</th><th>Status</th><th></th></tr></thead><tbody><tr v-for="item in items" :key="item.id" class="border-t"><td class="py-3">{{ item.name }}</td><td>{{ item.type }}</td><td>{{ item.operationalStatus }}</td><td><button class="text-indigo-700" @click="toggle(item)">{{ item.operationalStatus === 'enabled' ? 'Disable' : 'Enable' }}</button></td></tr></tbody></table></main></template>
