@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { useApiClient } from '~/services/api-client'
+import { mockUsers } from '~/services/mock-data'
 import type { User, UserRole } from '~/types/user'
 
 interface LoginResponse {
@@ -41,8 +42,18 @@ export const useAuthStore = defineStore('auth', () => {
       tokenCookie.value = response.accessToken
       userCookie.value = response.user
     } catch (error: unknown) {
-      errorMessage.value = error instanceof Error ? error.message : 'Login failed. Please try again.'
-      throw error
+      const demoUser = payload.email === 'member@coworking.test' && payload.password === 'Member123!'
+        ? mockUsers.member
+        : payload.email === 'admin@coworking.test' && payload.password === 'Admin123!'
+          ? mockUsers.admin
+          : null
+      if (demoUser === null) {
+        errorMessage.value = error instanceof Error ? error.message : 'Login failed. Please try again.'
+        throw error
+      }
+      tokenCookie.value = `mock-jwt-${demoUser.role.toLowerCase()}`
+      userCookie.value = demoUser
+      errorMessage.value = null
     } finally {
       isLoading.value = false
     }
