@@ -1,0 +1,33 @@
+{
+  "name": "coworking-reservation-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "typecheck": "nuxt typecheck",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@pinia/nuxt": "^1.0.2",
+    "chart.js": "^4.5.1",
+    "nuxt": "^3.21.11",
+    "pinia": "^4.0.3",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.17.0",
+    "@playwright/test": "^1.63.0",
+    "eslint": "^9.39.5",
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.1.8"
+  }
+}
