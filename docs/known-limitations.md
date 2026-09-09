@@ -5,3 +5,4 @@
 - **No Optimistic Payment UI:** The simulated payment flow waits for explicit webhook/backend settlement confirmation before mutating the local booking state to `confirmed`.
 - **Backend required for guarantees:** JWT verification, RBAC, reservation overlap prevention, Redis hold/cache behavior, webhook idempotency, and append-only ledger/audit integrity cannot be guaranteed by a browser client.
 - **Billable duration assumption:** The UI estimates whole-hour reservations using integer milliseconds. The API's stored price is authoritative should its rounding policy differ.
+- **Verification scope:** This repository verifies frontend static analysis and production compilation. API integration, Redis failure recovery, and concurrency/payment guarantees require the companion backend and integration tests.
