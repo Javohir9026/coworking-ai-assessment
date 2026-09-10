@@ -19,8 +19,8 @@ Every UI module adheres strictly to the 5 mandatory UX states:
 
 ## 3. Data Representation
 - **Timestamps:** Input forms capture local datetime, converted to ISO-8601 UTC strings before payload dispatch.
-- **Currency:** Amounts are received as integer cents and formatted via `Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })` without performing arithmetic in binary floating-point.
+- **Currency:** Amounts are integer UZS minor units (so no fractional conversion is applied) and are displayed with the shared `formatUzs` formatter. Price calculations remain integer-only.
 
 ## 4. Redis contract visible to the frontend
 
-The API owns `reservation-hold:{resourceId}:{holdId}` keys with a five-minute TTL and `dashboard:summary:{range}` keys with a short TTL (recommended 60 seconds). A successful reservation/admin mutation invalidates dashboard data server-side; the client immediately refetches its dashboard query as well. Redis being unavailable must degrade to uncached backend reads or a clear API failure, never client-side persistence. Redis holds are advisory only; database transactions/constraints protect permanent overlap correctness.
+The API owns `hold:{resourceId}:{holdId}` keys with a ten-minute TTL and `dashboard:{kind}:{range}` keys with a short TTL. A successful reservation, payment, or admin mutation invalidates dashboard data server-side; the client immediately refetches its dashboard query as well. Redis being unavailable must degrade to uncached backend reads or a clear API failure, never client-side persistence. Redis holds are advisory preflight locks only; database transactions and the PostgreSQL exclusion constraint protect permanent overlap correctness.
