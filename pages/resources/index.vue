@@ -29,7 +29,7 @@ onMounted(resourceStore.fetchResources)
 </script>
 
 <template>
-  <main class="mx-auto max-w-6xl px-6 py-10">
+  <main class="page-wrap">
     <header class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-sm font-semibold text-indigo-600">Member booking</p>
@@ -59,18 +59,18 @@ onMounted(resourceStore.fetchResources)
     <section v-else class="mt-8">
       <h2 class="text-lg font-bold text-slate-900">Available now</h2>
       <div v-if="enabledResources.length" class="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        <article v-for="resource in enabledResources" :key="resource.id" class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <article v-for="resource in enabledResources" :key="resource.id" class="surface group p-5 transition duration-200 hover:-translate-y-1 hover:shadow-lg">
           <div class="flex items-start justify-between gap-3"><h3 class="text-lg font-bold text-slate-900">{{ resource.name }}</h3><span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Active</span></div>
           <dl class="mt-5 space-y-2 text-sm text-slate-600"><div class="flex justify-between gap-3"><dt>Type</dt><dd class="font-medium text-slate-800">{{ resource.type.replace('_', ' ') }}</dd></div><div class="flex justify-between gap-3"><dt>Capacity</dt><dd class="font-medium text-slate-800">{{ resource.capacity }} people</dd></div></dl>
           <p class="mt-5 text-xl font-bold text-slate-900">{{ formatMoney(resource.hourlyPriceMinor) }}<span class="text-sm font-normal text-slate-500"> / hour</span></p>
-          <button type="button" class="mt-5 w-full rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700" @click="beginReservation(resource)">Reserve</button>
+          <div class="mt-5 grid grid-cols-2 gap-2"><NuxtLink :to="`/resources/${resource.id}`" class="btn-secondary">Details</NuxtLink><button type="button" class="btn-primary" @click="beginReservation(resource)">Reserve</button></div>
         </article>
       </div>
 
       <div v-if="disabledResources.length" class="mt-8">
         <h2 class="text-lg font-bold text-slate-900">Unavailable workspaces</h2>
         <div class="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <article v-for="resource in disabledResources" :key="resource.id" class="rounded-xl border border-slate-200 bg-slate-50 p-5 opacity-75">
+          <article v-for="resource in disabledResources" :key="resource.id" class="surface-muted p-5 opacity-75">
             <div class="flex items-start justify-between gap-3"><h3 class="text-lg font-bold text-slate-700">{{ resource.name }}</h3><span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">Disabled</span></div>
             <p class="mt-3 text-sm text-slate-600">{{ resource.type.replace('_', ' ') }} · {{ resource.capacity }} people</p>
             <p class="mt-4 text-lg font-bold text-slate-700">{{ formatMoney(resource.hourlyPriceMinor) }} / hour</p>

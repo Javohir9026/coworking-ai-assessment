@@ -5,6 +5,9 @@ export type LedgerEntryType = (typeof LEDGER_ENTRY_TYPES)[number]
 export interface LedgerEntry {
   id: string
   paymentId: string
+  paymentName: string
+  resourceName: string
+  memberName: string
   type: LedgerEntryType
   amountMinor: number
   currency: string

@@ -35,6 +35,9 @@ export interface Reservation {
   id: string
   resourceId: string
   memberId: string
+  resourceName: string
+  memberName: string
+  memberEmail: string | null
   startAt: string
   endAt: string
   status: ReservationStatus

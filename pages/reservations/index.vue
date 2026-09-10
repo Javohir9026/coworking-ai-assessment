@@ -2,47 +2,8 @@
 import { useReservationsStore } from '~/stores/reservations'
 definePageMeta({ layout: 'member' })
 const store = useReservationsStore()
+const page = ref(1); const pageSize = 10
+const items = computed(() => store.items.slice((page.value - 1) * pageSize, page.value * pageSize))
 onMounted(store.fetchMine)
-const money = (amount: number) => formatUzs(amount)
-const page = ref(1)
-const pageSize = 10
-const paginatedItems = computed(() =>
-  store.items.slice((page.value - 1) * pageSize, page.value * pageSize)
-)
 </script>
-<template>
-  <main class="mx-auto max-w-5xl px-6 py-10">
-    <div class="flex justify-between">
-      <h1 class="text-3xl font-bold">My reservations</h1>
-      <NuxtLink class="rounded bg-indigo-600 px-4 py-2 text-white" to="/resources"
-        >Book a workspace</NuxtLink
-      >
-    </div>
-    <p v-if="store.errorMessage" class="mt-4 rounded bg-red-50 p-3 text-red-700">
-      {{ store.errorMessage }}
-    </p>
-    <div v-if="store.isLoading" class="mt-6 h-32 animate-pulse rounded bg-slate-100" />
-    <p v-else-if="!store.items.length" class="mt-6 rounded border border-dashed p-8 text-center">
-      You have no reservations yet.
-    </p>
-    <div v-else class="mt-6 space-y-3">
-      <article v-for="item in paginatedItems" :key="item.id" class="rounded border p-4">
-        <div class="flex justify-between">
-          <strong>{{ item.status }}</strong
-          ><span>{{ money(item.totalPriceMinor) }}</span>
-        </div>
-        <p class="mt-2 text-sm">
-          {{ new Date(item.startAt).toLocaleString() }} —
-          {{ new Date(item.endAt).toLocaleString() }}
-        </p>
-        <NuxtLink
-          v-if="item.status === 'awaiting_payment'"
-          :to="`/reservations/${item.id}/pay`"
-          class="mt-3 inline-block text-indigo-700"
-          >Pay now →</NuxtLink
-        >
-      </article>
-      <UiPagination v-model:page="page" :total="store.items.length" :page-size="pageSize" />
-    </div>
-  </main>
-</template>
+<template><main class="page-wrap max-w-5xl"><div class="flex justify-between gap-4"><div><p class="section-kicker">Member area</p><h1 class="mt-1 text-3xl font-black">My bookings</h1></div><NuxtLink class="btn-primary" to="/resources">Book a workspace</NuxtLink></div><p v-if="store.errorMessage" class="mt-4 rounded-xl bg-red-50 p-3 text-red-700">{{ store.errorMessage }}</p><div v-if="store.isLoading" class="mt-6 h-32 animate-pulse rounded-2xl bg-slate-200"/><p v-else-if="!store.items.length" class="surface-muted mt-6 p-8 text-center">You have no reservations yet.</p><div v-else class="mt-6 space-y-3"><article v-for="item in items" :key="item.id" class="surface flex flex-wrap items-center justify-between gap-4 p-5"><div><h2 class="font-bold">{{ item.resourceName }}</h2><p class="mt-1 text-sm text-slate-600">{{ new Date(item.startAt).toLocaleString() }} — {{ new Date(item.endAt).toLocaleString() }}</p></div><div class="flex items-center gap-3"><UiStatusBadge :value="item.status"/><strong>{{ formatUzs(item.totalPriceMinor) }}</strong><NuxtLink v-if="item.status === 'awaiting_payment'" :to="`/reservations/${item.id}/pay`" class="btn-primary">Pay now</NuxtLink></div></article><UiPagination v-model:page="page" :total="store.items.length" :page-size="pageSize" /></div></main></template>

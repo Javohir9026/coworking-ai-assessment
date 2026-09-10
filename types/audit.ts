@@ -4,6 +4,8 @@ export interface AuditLogEntry {
   action: string
   targetType: string
   targetId: string
+  actorName: string
+  targetName: string
   metadata: Record<string, unknown>
   before: Record<string, unknown> | null
   after: Record<string, unknown> | null

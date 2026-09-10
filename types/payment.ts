@@ -7,6 +7,8 @@ export type PaymentProcessingStatus = (typeof PAYMENT_PROCESSING_STATUSES)[numbe
 export interface Payment {
   id: string
   reservationId: string
+  resourceName: string
+  memberName: string
   amountMinor: number
   currency: string
   status: PaymentStatus

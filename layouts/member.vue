@@ -9,14 +9,14 @@ async function logout(): Promise<void> {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50">
-    <header class="border-b bg-white">
-      <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <NuxtLink to="/resources" class="font-bold text-slate-900">Coworking</NuxtLink>
-        <div class="flex items-center gap-4 text-sm">
-          <NuxtLink to="/resources" class="text-slate-600 hover:text-indigo-700">Resources</NuxtLink>
-          <NuxtLink to="/reservations" class="text-slate-600 hover:text-indigo-700">My reservations</NuxtLink>
-          <button type="button" class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50" @click="logout">Logout</button>
+  <div class="app-shell">
+    <header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur">
+      <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <NuxtLink to="/resources" class="flex items-center gap-2 font-black tracking-tight text-slate-950"><span class="grid h-8 w-8 place-items-center rounded-xl bg-indigo-600 text-sm text-white">C</span>Coworking</NuxtLink>
+        <div class="flex flex-wrap items-center gap-1 text-sm">
+          <NuxtLink to="/resources" class="rounded-lg px-3 py-2 font-medium text-slate-600 transition hover:bg-indigo-50 hover:text-indigo-700">Spaces</NuxtLink>
+          <NuxtLink to="/reservations" class="rounded-lg px-3 py-2 font-medium text-slate-600 transition hover:bg-indigo-50 hover:text-indigo-700">My bookings</NuxtLink>
+          <button type="button" class="btn-secondary ml-1 px-3 py-2" @click="logout">Sign out</button>
         </div>
       </nav>
     </header>

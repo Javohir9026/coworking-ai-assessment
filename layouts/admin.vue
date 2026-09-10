@@ -9,17 +9,17 @@ async function logout(): Promise<void> {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50">
-    <header class="border-b bg-white">
-      <nav class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
-        <NuxtLink to="/admin/dashboard" class="font-bold text-slate-900">Coworking Admin</NuxtLink>
-        <div class="flex flex-wrap items-center gap-3 text-sm">
-          <NuxtLink to="/admin/dashboard" class="text-slate-600 hover:text-indigo-700">Dashboard</NuxtLink>
-          <NuxtLink to="/admin/resources" class="text-slate-600 hover:text-indigo-700">Resources</NuxtLink>
-          <NuxtLink to="/admin/reservations" class="text-slate-600 hover:text-indigo-700">Reservations</NuxtLink>
-          <NuxtLink to="/admin/payments" class="text-slate-600 hover:text-indigo-700">Payments</NuxtLink>
-          <NuxtLink to="/admin/audit" class="text-slate-600 hover:text-indigo-700">Audit & ledger</NuxtLink>
-          <button type="button" class="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-50" @click="logout">Logout</button>
+  <div class="app-shell">
+    <header class="sticky top-0 z-20 border-b border-slate-800 bg-slate-950 text-white shadow-lg shadow-slate-950/20">
+      <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <NuxtLink to="/admin/dashboard" class="flex items-center gap-2 font-black tracking-tight"><span class="grid h-8 w-8 place-items-center rounded-xl bg-indigo-500 text-sm">C</span>Operations</NuxtLink>
+        <div class="flex flex-wrap items-center gap-1 text-sm">
+          <NuxtLink to="/admin/dashboard" class="rounded-lg px-3 py-2 font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">Overview</NuxtLink>
+          <NuxtLink to="/admin/resources" class="rounded-lg px-3 py-2 font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">Spaces</NuxtLink>
+          <NuxtLink to="/admin/reservations" class="rounded-lg px-3 py-2 font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">Bookings</NuxtLink>
+          <NuxtLink to="/admin/payments" class="rounded-lg px-3 py-2 font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">Payments</NuxtLink>
+          <NuxtLink to="/admin/audit" class="rounded-lg px-3 py-2 font-medium text-slate-300 transition hover:bg-white/10 hover:text-white">Audit</NuxtLink>
+          <button type="button" class="ml-1 rounded-lg border border-slate-700 px-3 py-2 font-medium text-slate-200 transition hover:bg-white/10" @click="logout">Sign out</button>
         </div>
       </nav>
     </header>
