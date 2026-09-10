@@ -142,11 +142,21 @@ onMounted(load)
             <td class="capitalize">{{ item.type.replace('_', ' ') }}</td>
             <td>{{ formatUzs(item.hourlyPriceMinor) }}</td>
             <td><UiStatusBadge :value="item.operationalStatus" /></td>
-            <td class="space-x-2">
-              <button class="text-indigo-700" @click="edit(item)">Edit</button
-              ><button class="text-rose-700" :disabled="saving" @click="toggle(item)">
-                {{ item.operationalStatus === 'enabled' ? 'Disable' : 'Enable' }}
-              </button>
+            <td>
+              <div class="flex items-center gap-1">
+                <UiActionIcon
+                  action="edit"
+                  :label="`Edit ${item.name}`"
+                  :disabled="saving"
+                  @click="edit(item)"
+                />
+                <UiActionIcon
+                  :action="item.operationalStatus === 'enabled' ? 'disable' : 'approve'"
+                  :label="`${item.operationalStatus === 'enabled' ? 'Disable' : 'Enable'} ${item.name}`"
+                  :disabled="saving"
+                  @click="toggle(item)"
+                />
+              </div>
             </td>
           </tr>
         </tbody>

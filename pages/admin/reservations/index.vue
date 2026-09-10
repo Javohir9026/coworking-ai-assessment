@@ -114,14 +114,42 @@ onMounted(load)
             <td><UiStatusBadge :value="item.status" /></td>
             <td>{{ new Date(item.startAt).toLocaleString() }}</td>
             <td>
-              <NuxtLink :to="`/admin/reservations/${item.id}`" class="text-indigo-700"
-                >View</NuxtLink
-              ><template v-if="item.status === 'pending'"
-                ><button class="ml-3 text-emerald-700" @click="approve(item)">Approve</button
-                ><button class="ml-3 text-rose-700" @click="rejectTarget = item">
-                  Reject
-                </button></template
-              >
+              <div class="flex items-center gap-1">
+                <NuxtLink
+                  :to="`/admin/reservations/${item.id}`"
+                  :title="`View ${item.resourceName} booking`"
+                  :aria-label="`View ${item.resourceName} booking`"
+                  class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-indigo-700 transition hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                >
+                  <svg
+                    class="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+                    />
+                    <circle cx="12" cy="12" r="2.5" />
+                  </svg>
+                </NuxtLink>
+                <template v-if="item.status === 'pending'">
+                  <UiActionIcon
+                    action="approve"
+                    :label="`Approve ${item.resourceName} booking`"
+                    @click="approve(item)"
+                  />
+                  <UiActionIcon
+                    action="reject"
+                    :label="`Reject ${item.resourceName} booking`"
+                    @click="rejectTarget = item"
+                  />
+                </template>
+              </div>
             </td>
           </tr>
         </tbody>
