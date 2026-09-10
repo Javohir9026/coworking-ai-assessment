@@ -7,6 +7,7 @@ definePageMeta({ layout: 'member' })
 const resourceStore = useResourceStore()
 const validationMessage = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
+const page = ref(1)
 
 const enabledResources = computed(() => resourceStore.items.filter((resource: Resource) => resource.operationalStatus === 'enabled'))
 const disabledResources = computed(() => resourceStore.items.filter((resource: Resource) => resource.operationalStatus === 'disabled'))
@@ -25,7 +26,8 @@ function beginReservation(resource: Resource): void {
   navigateTo(`/resources/${resource.id}/reserve`)
 }
 
-onMounted(resourceStore.fetchResources)
+function changePage(nextPage: number): void { page.value = nextPage; resourceStore.fetchResources(nextPage) }
+onMounted(() => resourceStore.fetchResources(page.value))
 </script>
 
 <template>
@@ -79,5 +81,6 @@ onMounted(resourceStore.fetchResources)
         </div>
       </div>
     </section>
+    <UiPagination v-if="resourceStore.meta.total > resourceStore.meta.pageSize" :page="resourceStore.meta.page" :total="resourceStore.meta.total" :page-size="resourceStore.meta.pageSize" @update:page="changePage" />
   </main>
 </template>

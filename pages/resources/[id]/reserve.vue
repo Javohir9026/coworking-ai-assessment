@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useResourceStore } from '~/stores/resource'
 import { useReservationsStore } from '~/stores/reservations'
+import { useApiClient } from '~/services/api-client'
 import type { Resource } from '~/types/resource'
 
 definePageMeta({ layout: 'member' })
@@ -13,6 +14,7 @@ const createdId = ref<string | null>(null)
 onMounted(async () => {
   if (!resources.items.length) await resources.fetchResources()
   resource.value = resources.items.find((item: Resource) => item.id === route.params.id) ?? null
+  if (!resource.value) resource.value = await useApiClient().request<Resource>(`/resources/${route.params.id}`)
 })
 
 async function create(payload: { resourceId: string; startAt: string; endAt: string }): Promise<void> {

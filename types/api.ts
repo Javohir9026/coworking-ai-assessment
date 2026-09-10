@@ -10,8 +10,14 @@ export interface ApiResponse<TData> {
   data: TData
 }
 
-export interface PaginatedResponse<TItem> {
-  data: TItem[]
+export interface PaginationMeta {
+  total: number
+  page: number
+  pageSize: number
+}
+
+export interface PaginatedResult<TItem> {
+  items: TItem[]
   meta: {
     total: number
     page: number
