@@ -9,10 +9,16 @@ const validationMessage = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 const page = ref(1)
 
-const enabledResources = computed(() => resourceStore.items.filter((resource: Resource) => resource.operationalStatus === 'enabled'))
-const disabledResources = computed(() => resourceStore.items.filter((resource: Resource) => resource.operationalStatus === 'disabled'))
+const enabledResources = computed(() =>
+  resourceStore.items.filter((resource: Resource) => resource.operationalStatus === 'enabled')
+)
+const disabledResources = computed(() =>
+  resourceStore.items.filter((resource: Resource) => resource.operationalStatus === 'disabled')
+)
 
-function formatMoney(amount: number): string { return formatUzs(amount) }
+function formatMoney(amount: number): string {
+  return formatUzs(amount)
+}
 
 function beginReservation(resource: Resource): void {
   if (resource.operationalStatus === 'disabled') {
@@ -26,7 +32,10 @@ function beginReservation(resource: Resource): void {
   navigateTo(`/resources/${resource.id}/reserve`)
 }
 
-function changePage(nextPage: number): void { page.value = nextPage; resourceStore.fetchResources(nextPage) }
+function changePage(nextPage: number): void {
+  page.value = nextPage
+  resourceStore.fetchResources(nextPage)
+}
 onMounted(() => resourceStore.fetchResources(page.value))
 </script>
 
@@ -36,51 +45,147 @@ onMounted(() => resourceStore.fetchResources(page.value))
       <div>
         <p class="text-sm font-semibold text-indigo-600">Member booking</p>
         <h1 class="mt-1 text-3xl font-bold text-slate-900">Find a workspace</h1>
-        <p class="mt-2 text-slate-600">All prices are shown per hour. Availability is confirmed by the server when you reserve.</p>
+        <p class="mt-2 text-slate-600">
+          All prices are shown per hour. Availability is confirmed by the server when you reserve.
+        </p>
       </div>
-      <button type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" :disabled="resourceStore.isLoading" @click="resourceStore.fetchResources">
+      <button
+        type="button"
+        class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        :disabled="resourceStore.isLoading"
+        @click="resourceStore.fetchResources"
+      >
         Refresh catalog
       </button>
     </header>
 
-    <p v-if="validationMessage" class="mt-6 rounded-lg bg-amber-50 p-3 text-sm text-amber-800" role="alert">{{ validationMessage }}</p>
-    <p v-if="successMessage" class="mt-6 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700" role="status">{{ successMessage }}</p>
-    <p v-if="resourceStore.errorMessage" class="mt-6 rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
-      {{ resourceStore.errorMessage }} <button type="button" class="ml-2 font-semibold underline" @click="resourceStore.fetchResources">Try again</button>
+    <p
+      v-if="validationMessage"
+      class="mt-6 rounded-lg bg-amber-50 p-3 text-sm text-amber-800"
+      role="alert"
+    >
+      {{ validationMessage }}
+    </p>
+    <p
+      v-if="successMessage"
+      class="mt-6 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700"
+      role="status"
+    >
+      {{ successMessage }}
+    </p>
+    <p
+      v-if="resourceStore.errorMessage"
+      class="mt-6 rounded-lg bg-red-50 p-3 text-sm text-red-700"
+      role="alert"
+    >
+      {{ resourceStore.errorMessage }}
+      <button
+        type="button"
+        class="ml-2 font-semibold underline"
+        @click="resourceStore.fetchResources"
+      >
+        Try again
+      </button>
     </p>
 
-    <section v-if="resourceStore.isLoading" class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-label="Loading resources">
-      <div v-for="skeleton in 6" :key="skeleton" class="h-52 animate-pulse rounded-xl bg-slate-100" />
+    <section
+      v-if="resourceStore.isLoading"
+      class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+      aria-label="Loading resources"
+    >
+      <div
+        v-for="skeleton in 6"
+        :key="skeleton"
+        class="h-52 animate-pulse rounded-xl bg-slate-100"
+      />
     </section>
 
-    <section v-else-if="resourceStore.items.length === 0 && !resourceStore.errorMessage" class="mt-8 rounded-xl border border-dashed border-slate-300 p-10 text-center">
+    <section
+      v-else-if="resourceStore.items.length === 0 && !resourceStore.errorMessage"
+      class="mt-8 rounded-xl border border-dashed border-slate-300 p-10 text-center"
+    >
       <p class="text-lg font-semibold text-slate-800">No workspaces are available yet</p>
-      <p class="mt-2 text-sm text-slate-600">Please check back shortly or ask an administrator to add a resource.</p>
+      <p class="mt-2 text-sm text-slate-600">
+        Please check back shortly or ask an administrator to add a resource.
+      </p>
     </section>
 
     <section v-else class="mt-8">
       <h2 class="text-lg font-bold text-slate-900">Available now</h2>
       <div v-if="enabledResources.length" class="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        <article v-for="resource in enabledResources" :key="resource.id" class="surface group p-5 transition duration-200 hover:-translate-y-1 hover:shadow-lg">
-          <div class="flex items-start justify-between gap-3"><h3 class="text-lg font-bold text-slate-900">{{ resource.name }}</h3><span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Active</span></div>
-          <dl class="mt-5 space-y-2 text-sm text-slate-600"><div class="flex justify-between gap-3"><dt>Type</dt><dd class="font-medium text-slate-800">{{ resource.type.replace('_', ' ') }}</dd></div><div class="flex justify-between gap-3"><dt>Capacity</dt><dd class="font-medium text-slate-800">{{ resource.capacity }} people</dd></div></dl>
-          <p class="mt-5 text-xl font-bold text-slate-900">{{ formatMoney(resource.hourlyPriceMinor) }}<span class="text-sm font-normal text-slate-500"> / hour</span></p>
-          <div class="mt-5 grid grid-cols-2 gap-2"><NuxtLink :to="`/resources/${resource.id}`" class="btn-secondary">Details</NuxtLink><button type="button" class="btn-primary" @click="beginReservation(resource)">Reserve</button></div>
+        <article
+          v-for="resource in enabledResources"
+          :key="resource.id"
+          class="surface group p-5 transition duration-200 hover:-translate-y-1 hover:shadow-lg"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <h3 class="text-lg font-bold text-slate-900">{{ resource.name }}</h3>
+            <span
+              class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800"
+              >Active</span
+            >
+          </div>
+          <dl class="mt-5 space-y-2 text-sm text-slate-600">
+            <div class="flex justify-between gap-3">
+              <dt>Type</dt>
+              <dd class="font-medium text-slate-800">{{ resource.type.replace('_', ' ') }}</dd>
+            </div>
+            <div class="flex justify-between gap-3">
+              <dt>Capacity</dt>
+              <dd class="font-medium text-slate-800">{{ resource.capacity }} people</dd>
+            </div>
+          </dl>
+          <p class="mt-5 text-xl font-bold text-slate-900">
+            {{ formatMoney(resource.hourlyPriceMinor)
+            }}<span class="text-sm font-normal text-slate-500"> / hour</span>
+          </p>
+          <div class="mt-5 grid grid-cols-2 gap-2">
+            <NuxtLink :to="`/resources/${resource.id}`" class="btn-secondary">Details</NuxtLink
+            ><button type="button" class="btn-primary" @click="beginReservation(resource)">
+              Reserve
+            </button>
+          </div>
         </article>
       </div>
 
       <div v-if="disabledResources.length" class="mt-8">
         <h2 class="text-lg font-bold text-slate-900">Unavailable workspaces</h2>
         <div class="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <article v-for="resource in disabledResources" :key="resource.id" class="surface-muted p-5 opacity-75">
-            <div class="flex items-start justify-between gap-3"><h3 class="text-lg font-bold text-slate-700">{{ resource.name }}</h3><span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">Disabled</span></div>
-            <p class="mt-3 text-sm text-slate-600">{{ resource.type.replace('_', ' ') }} · {{ resource.capacity }} people</p>
-            <p class="mt-4 text-lg font-bold text-slate-700">{{ formatMoney(resource.hourlyPriceMinor) }} / hour</p>
-            <button type="button" disabled class="mt-5 w-full cursor-not-allowed rounded-lg bg-slate-300 px-4 py-2 font-semibold text-slate-600">Reservations unavailable</button>
+          <article
+            v-for="resource in disabledResources"
+            :key="resource.id"
+            class="surface-muted p-5 opacity-75"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <h3 class="text-lg font-bold text-slate-700">{{ resource.name }}</h3>
+              <span
+                class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700"
+                >Disabled</span
+              >
+            </div>
+            <p class="mt-3 text-sm text-slate-600">
+              {{ resource.type.replace('_', ' ') }} · {{ resource.capacity }} people
+            </p>
+            <p class="mt-4 text-lg font-bold text-slate-700">
+              {{ formatMoney(resource.hourlyPriceMinor) }} / hour
+            </p>
+            <button
+              type="button"
+              disabled
+              class="mt-5 w-full cursor-not-allowed rounded-lg bg-slate-300 px-4 py-2 font-semibold text-slate-600"
+            >
+              Reservations unavailable
+            </button>
           </article>
         </div>
       </div>
     </section>
-    <UiPagination v-if="resourceStore.meta.total > resourceStore.meta.pageSize" :page="resourceStore.meta.page" :total="resourceStore.meta.total" :page-size="resourceStore.meta.pageSize" @update:page="changePage" />
+    <UiPagination
+      v-if="resourceStore.meta.total > resourceStore.meta.pageSize"
+      :page="resourceStore.meta.page"
+      :total="resourceStore.meta.total"
+      :page-size="resourceStore.meta.pageSize"
+      @update:page="changePage"
+    />
   </main>
 </template>

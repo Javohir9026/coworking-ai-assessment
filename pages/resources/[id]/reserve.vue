@@ -19,10 +19,15 @@ let statusTimer: ReturnType<typeof setInterval> | null = null
 onMounted(async () => {
   if (!resources.items.length) await resources.fetchResources()
   resource.value = resources.items.find((item: Resource) => item.id === route.params.id) ?? null
-  if (!resource.value) resource.value = await useApiClient().request<Resource>(`/resources/${route.params.id}`)
+  if (!resource.value)
+    resource.value = await useApiClient().request<Resource>(`/resources/${route.params.id}`)
 })
 
-async function create(payload: { resourceId: string; startAt: string; endAt: string }): Promise<void> {
+async function create(payload: {
+  resourceId: string
+  startAt: string
+  endAt: string
+}): Promise<void> {
   const hold = await reservations.createHold(payload)
   const reservation = await reservations.create({ ...payload, holdKey: hold.holdKey })
   createdId.value = reservation.id
@@ -40,27 +45,54 @@ async function refreshStatus(): Promise<void> {
   }
 }
 
-onUnmounted(() => { if (statusTimer) clearInterval(statusTimer) })
+onUnmounted(() => {
+  if (statusTimer) clearInterval(statusTimer)
+})
 </script>
 
 <template>
   <main class="page-wrap max-w-5xl">
-    <NuxtLink to="/resources" class="text-sm font-semibold text-indigo-700">Back to catalog</NuxtLink>
-    <BookingReservationDrawer v-if="!createdId" :resource="resource" :is-submitting="reservations.isLoading" :request-error="reservations.errorMessage" @submit="create" @close="navigateTo('/resources')" />
+    <NuxtLink to="/resources" class="text-sm font-semibold text-indigo-700"
+      >Back to catalog</NuxtLink
+    >
+    <BookingReservationDrawer
+      v-if="!createdId"
+      :resource="resource"
+      :is-submitting="reservations.isLoading"
+      :request-error="reservations.errorMessage"
+      @submit="create"
+      @close="navigateTo('/resources')"
+    />
     <section v-else class="surface mt-10 p-8">
       <p class="section-kicker">Booking submitted</p>
       <h1 class="mt-2 text-2xl font-black">Reservation created</h1>
       <p class="mt-2 text-slate-600">{{ reservations.successMessage }}</p>
 
       <div v-if="canContinueToPayment" class="mt-5">
-        <p class="mb-3 text-sm text-emerald-700">Your reservation has been approved. You can continue to payment.</p>
-        <NuxtLink :to="`/reservations/${createdId}/pay`" class="btn-primary">Continue to payment</NuxtLink>
+        <p class="mb-3 text-sm text-emerald-700">
+          Your reservation has been approved. You can continue to payment.
+        </p>
+        <NuxtLink :to="`/reservations/${createdId}/pay`" class="btn-primary"
+          >Continue to payment</NuxtLink
+        >
       </div>
       <div v-else class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
         <p class="font-semibold text-amber-900">Waiting for administrator approval</p>
-        <p class="mt-1 text-sm text-amber-800">Payment becomes available after an administrator approves this reservation. This page checks the status automatically.</p>
-        <button class="btn-primary mt-4 cursor-not-allowed opacity-50" type="button" disabled>Continue to payment</button>
-        <button class="ml-3 text-sm font-semibold text-indigo-700 disabled:opacity-50" type="button" :disabled="refreshingStatus" @click="refreshStatus">{{ refreshingStatus ? 'Checking…' : 'Check status' }}</button>
+        <p class="mt-1 text-sm text-amber-800">
+          Payment becomes available after an administrator approves this reservation. This page
+          checks the status automatically.
+        </p>
+        <button class="btn-primary mt-4 cursor-not-allowed opacity-50" type="button" disabled>
+          Continue to payment
+        </button>
+        <button
+          class="ml-3 text-sm font-semibold text-indigo-700 disabled:opacity-50"
+          type="button"
+          :disabled="refreshingStatus"
+          @click="refreshStatus"
+        >
+          {{ refreshingStatus ? 'Checking…' : 'Check status' }}
+        </button>
       </div>
     </section>
   </main>

@@ -3,10 +3,145 @@ import { useApiClient } from '~/services/api-client'
 import type { PaginatedResult } from '~/types/api'
 import type { Reservation, ReservationStatus } from '~/types/reservation'
 definePageMeta({ layout: 'admin' })
-const items=ref<Reservation[]>([]); const status=ref<ReservationStatus|''>(''); const loading=ref(true); const error=ref<string|null>(null); const success=ref<string|null>(null); const meta=ref({total:0,page:1,pageSize:10}); const rejectTarget=ref<Reservation|null>(null); const reason=ref('')
-async function load(page=meta.value.page){loading.value=true;try{const result=await useApiClient().request<PaginatedResult<Reservation>>('/admin/reservations',{query:{page,pageSize:meta.value.pageSize,...(status.value?{status:status.value}:{})}});items.value=result.items;meta.value=result.meta}catch(e:unknown){error.value=e instanceof Error?e.message:'Reservations could not be loaded.'}finally{loading.value=false}}
-async function approve(item:Reservation){try{await useApiClient().request(`/reservations/${item.id}/approve`,{method:'PATCH'});success.value='Reservation approved.';await load()}catch(e:unknown){error.value=e instanceof Error?e.message:'Approval failed.'}}
-async function reject(){if(!rejectTarget.value||!reason.value.trim()){error.value='A rejection reason is required.';return}try{await useApiClient().request(`/reservations/${rejectTarget.value.id}/reject`,{method:'PATCH',body:{reason:reason.value.trim()}});rejectTarget.value=null;reason.value='';success.value='Reservation rejected.';await load()}catch(e:unknown){error.value=e instanceof Error?e.message:'Rejection failed.'}}
-watch(status,()=>load(1));onMounted(load)
+const items = ref<Reservation[]>([])
+const status = ref<ReservationStatus | ''>('')
+const loading = ref(true)
+const error = ref<string | null>(null)
+const success = ref<string | null>(null)
+const meta = ref({ total: 0, page: 1, pageSize: 10 })
+const rejectTarget = ref<Reservation | null>(null)
+const reason = ref('')
+async function load(page = meta.value.page) {
+  loading.value = true
+  try {
+    const result = await useApiClient().request<PaginatedResult<Reservation>>(
+      '/admin/reservations',
+      {
+        query: {
+          page,
+          pageSize: meta.value.pageSize,
+          ...(status.value ? { status: status.value } : {})
+        }
+      }
+    )
+    items.value = result.items
+    meta.value = result.meta
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : 'Reservations could not be loaded.'
+  } finally {
+    loading.value = false
+  }
+}
+async function approve(item: Reservation) {
+  try {
+    await useApiClient().request(`/reservations/${item.id}/approve`, { method: 'PATCH' })
+    success.value = 'Reservation approved.'
+    await load()
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : 'Approval failed.'
+  }
+}
+async function reject() {
+  if (!rejectTarget.value || !reason.value.trim()) {
+    error.value = 'A rejection reason is required.'
+    return
+  }
+  try {
+    await useApiClient().request(`/reservations/${rejectTarget.value.id}/reject`, {
+      method: 'PATCH',
+      body: { reason: reason.value.trim() }
+    })
+    rejectTarget.value = null
+    reason.value = ''
+    success.value = 'Reservation rejected.'
+    await load()
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : 'Rejection failed.'
+  }
+}
+watch(status, () => load(1))
+onMounted(load)
 </script>
-<template><main class="page-wrap"><div class="flex flex-wrap items-end justify-between gap-3"><div><p class="section-kicker">Operations</p><h1 class="mt-1 text-3xl font-black">Bookings</h1></div><select v-model="status" class="field w-52"><option value="">All statuses</option><option v-for="value in ['pending','approved','awaiting_payment','confirmed','rejected','cancelled','expired']" :key="value" :value="value">{{value}}</option></select></div><p v-if="error" class="mt-4 rounded-xl bg-red-50 p-3 text-red-700">{{error}}</p><p v-if="success" class="mt-4 rounded-xl bg-emerald-50 p-3 text-emerald-700">{{success}}</p><div v-if="loading" class="mt-6 h-32 animate-pulse rounded-2xl bg-slate-200"/><div v-else class="table-shell mt-6"><table class="w-full text-left text-sm"><thead class="table-head"><tr><th class="p-3">Workspace</th><th>Member</th><th>Status</th><th>Start</th><th>Actions</th></tr></thead><tbody><tr v-for="item in items" :key="item.id" class="border-t"><td class="p-3 font-semibold">{{item.resourceName}}</td><td>{{item.memberName}}</td><td><UiStatusBadge :value="item.status"/></td><td>{{new Date(item.startAt).toLocaleString()}}</td><td><NuxtLink :to="`/admin/reservations/${item.id}`" class="text-indigo-700">View</NuxtLink><template v-if="item.status==='pending'"><button class="ml-3 text-emerald-700" @click="approve(item)">Approve</button><button class="ml-3 text-rose-700" @click="rejectTarget=item">Reject</button></template></td></tr></tbody></table><UiPagination :page="meta.page" :total="meta.total" :page-size="meta.pageSize" @update:page="load"/></div><div v-if="rejectTarget" class="fixed inset-0 z-30 grid place-items-center bg-slate-950/40 p-4"><form class="surface w-full max-w-md p-6" @submit.prevent="reject"><h2 class="text-xl font-black">Reject booking</h2><textarea v-model="reason" class="field" placeholder="Reason is required"/><div class="mt-4 flex gap-2"><button class="btn-primary bg-rose-600 hover:bg-rose-700">Reject</button><button class="btn-secondary" type="button" @click="rejectTarget=null">Cancel</button></div></form></div></main></template>
+<template>
+  <main class="page-wrap">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="section-kicker">Operations</p>
+        <h1 class="mt-1 text-3xl font-black">Bookings</h1>
+      </div>
+      <select v-model="status" class="field w-52">
+        <option value="">All statuses</option>
+        <option
+          v-for="value in [
+            'pending',
+            'approved',
+            'awaiting_payment',
+            'confirmed',
+            'rejected',
+            'cancelled',
+            'expired'
+          ]"
+          :key="value"
+          :value="value"
+        >
+          {{ value }}
+        </option>
+      </select>
+    </div>
+    <p v-if="error" class="mt-4 rounded-xl bg-red-50 p-3 text-red-700">{{ error }}</p>
+    <p v-if="success" class="mt-4 rounded-xl bg-emerald-50 p-3 text-emerald-700">{{ success }}</p>
+    <div v-if="loading" class="mt-6 h-32 animate-pulse rounded-2xl bg-slate-200" />
+    <div v-else class="table-shell mt-6">
+      <table class="w-full text-left text-sm">
+        <thead class="table-head">
+          <tr>
+            <th class="p-3">Workspace</th>
+            <th>Member</th>
+            <th>Status</th>
+            <th>Start</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="!items.length">
+            <td colspan="5" class="p-8 text-center text-slate-600">
+              No bookings match this filter.
+            </td>
+          </tr>
+          <tr v-for="item in items" :key="item.id" class="border-t">
+            <td class="p-3 font-semibold">{{ item.resourceName }}</td>
+            <td>{{ item.memberName }}</td>
+            <td><UiStatusBadge :value="item.status" /></td>
+            <td>{{ new Date(item.startAt).toLocaleString() }}</td>
+            <td>
+              <NuxtLink :to="`/admin/reservations/${item.id}`" class="text-indigo-700"
+                >View</NuxtLink
+              ><template v-if="item.status === 'pending'"
+                ><button class="ml-3 text-emerald-700" @click="approve(item)">Approve</button
+                ><button class="ml-3 text-rose-700" @click="rejectTarget = item">
+                  Reject
+                </button></template
+              >
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <UiPagination
+        :page="meta.page"
+        :total="meta.total"
+        :page-size="meta.pageSize"
+        @update:page="load"
+      />
+    </div>
+    <div v-if="rejectTarget" class="fixed inset-0 z-30 grid place-items-center bg-slate-950/40 p-4">
+      <form class="surface w-full max-w-md p-6" @submit.prevent="reject">
+        <h2 class="text-xl font-black">Reject booking</h2>
+        <textarea v-model="reason" class="field" placeholder="Reason is required" />
+        <div class="mt-4 flex gap-2">
+          <button class="btn-primary bg-rose-600 hover:bg-rose-700">Reject</button
+          ><button class="btn-secondary" type="button" @click="rejectTarget = null">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </main>
+</template>

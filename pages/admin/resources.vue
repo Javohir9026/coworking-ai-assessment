@@ -3,12 +3,160 @@ import { useApiClient } from '~/services/api-client'
 import type { Resource } from '~/types/resource'
 import type { PaginatedResult } from '~/types/api'
 definePageMeta({ layout: 'admin' })
-const items=ref<Resource[]>([]); const name=ref(''); const type=ref<Resource['type']>('desk'); const capacity=ref(1); const hourlyPriceMinor=ref(25000); const editing=ref<Resource|null>(null); const loading=ref(true); const saving=ref(false); const error=ref<string|null>(null); const success=ref<string|null>(null); const meta=ref({total:0,page:1,pageSize:10})
-async function load(page=meta.value.page){loading.value=true;try{const result=await useApiClient().request<PaginatedResult<Resource>>('/admin/resources',{query:{page,pageSize:meta.value.pageSize}});items.value=result.items;meta.value=result.meta}catch(e:unknown){error.value=e instanceof Error?e.message:'Resources could not be loaded.'}finally{loading.value=false}}
-function reset(){name.value='';type.value='desk';capacity.value=1;hourlyPriceMinor.value=25000;editing.value=null}
-function edit(item:Resource){editing.value=item;name.value=item.name;type.value=item.type;capacity.value=item.capacity;hourlyPriceMinor.value=item.hourlyPriceMinor}
-async function submit(){if(!name.value.trim()||capacity.value<1||hourlyPriceMinor.value<0){error.value='Enter a name, capacity, and valid hourly price.';return}saving.value=true;try{const api=useApiClient();const body={name:name.value.trim(),type:type.value,capacity:capacity.value,hourlyPriceMinor:hourlyPriceMinor.value};if(editing.value){Object.assign(editing.value,await api.request<Resource>(`/resources/${editing.value.id}`,{method:'PATCH',body}));success.value='Workspace updated.'}else{items.value.push(await api.request<Resource>('/resources',{method:'POST',body}));success.value='Workspace created.'}reset()}catch(e:unknown){error.value=e instanceof Error?e.message:'Workspace could not be saved.'}finally{saving.value=false}}
-async function toggle(item:Resource){saving.value=true;try{Object.assign(item,await useApiClient().request<Resource>(`/resources/${item.id}/${item.operationalStatus==='enabled'?'disable':'enable'}`,{method:'PATCH'}));success.value=`${item.name} updated.`}catch(e:unknown){error.value=e instanceof Error?e.message:'Status change failed.'}finally{saving.value=false}}
+const items = ref<Resource[]>([])
+const name = ref('')
+const type = ref<Resource['type']>('desk')
+const capacity = ref(1)
+const hourlyPriceMinor = ref(25000)
+const editing = ref<Resource | null>(null)
+const loading = ref(true)
+const saving = ref(false)
+const error = ref<string | null>(null)
+const success = ref<string | null>(null)
+const meta = ref({ total: 0, page: 1, pageSize: 10 })
+async function load(page = meta.value.page) {
+  loading.value = true
+  try {
+    const result = await useApiClient().request<PaginatedResult<Resource>>('/admin/resources', {
+      query: { page, pageSize: meta.value.pageSize }
+    })
+    items.value = result.items
+    meta.value = result.meta
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : 'Resources could not be loaded.'
+  } finally {
+    loading.value = false
+  }
+}
+function reset() {
+  name.value = ''
+  type.value = 'desk'
+  capacity.value = 1
+  hourlyPriceMinor.value = 25000
+  editing.value = null
+}
+function edit(item: Resource) {
+  editing.value = item
+  name.value = item.name
+  type.value = item.type
+  capacity.value = item.capacity
+  hourlyPriceMinor.value = item.hourlyPriceMinor
+}
+async function submit() {
+  if (!name.value.trim() || capacity.value < 1 || hourlyPriceMinor.value < 0) {
+    error.value = 'Enter a name, capacity, and valid hourly price.'
+    return
+  }
+  saving.value = true
+  try {
+    const api = useApiClient()
+    const body = {
+      name: name.value.trim(),
+      type: type.value,
+      capacity: capacity.value,
+      hourlyPriceMinor: hourlyPriceMinor.value
+    }
+    if (editing.value) {
+      Object.assign(
+        editing.value,
+        await api.request<Resource>(`/resources/${editing.value.id}`, { method: 'PATCH', body })
+      )
+      success.value = 'Workspace updated.'
+    } else {
+      items.value.push(await api.request<Resource>('/resources', { method: 'POST', body }))
+      success.value = 'Workspace created.'
+    }
+    reset()
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : 'Workspace could not be saved.'
+  } finally {
+    saving.value = false
+  }
+}
+async function toggle(item: Resource) {
+  saving.value = true
+  try {
+    Object.assign(
+      item,
+      await useApiClient().request<Resource>(
+        `/resources/${item.id}/${item.operationalStatus === 'enabled' ? 'disable' : 'enable'}`,
+        { method: 'PATCH' }
+      )
+    )
+    success.value = `${item.name} updated.`
+  } catch (e: unknown) {
+    error.value = e instanceof Error ? e.message : 'Status change failed.'
+  } finally {
+    saving.value = false
+  }
+}
 onMounted(load)
 </script>
-<template><main class="page-wrap"><div class="flex justify-between"><h1 class="text-3xl font-black">Workspace management</h1><button class="btn-secondary" @click="load()">Refresh</button></div><p v-if="error" class="mt-4 rounded-xl bg-red-50 p-3 text-red-700">{{error}}</p><p v-if="success" class="mt-4 rounded-xl bg-emerald-50 p-3 text-emerald-700">{{success}}</p><form class="surface mt-6 grid gap-3 p-4 sm:grid-cols-5" @submit.prevent="submit"><input v-model="name" class="field mt-0" placeholder="Workspace name"><select v-model="type" class="field mt-0"><option value="desk">Desk</option><option value="meeting_room">Meeting room</option><option value="private_office">Private office</option></select><input v-model.number="capacity" class="field mt-0" type="number" min="1"><input v-model.number="hourlyPriceMinor" class="field mt-0" type="number" min="0"><div class="flex gap-2"><button class="btn-primary" :disabled="saving">{{editing?'Update':'Create'}}</button><button v-if="editing" class="btn-secondary" type="button" @click="reset">Cancel</button></div></form><div v-if="loading" class="mt-6 h-32 animate-pulse rounded-2xl bg-slate-200"/><div v-else class="table-shell mt-6"><table class="w-full text-left text-sm"><thead class="table-head"><tr><th class="p-3">Name</th><th>Type</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead><tbody><tr v-for="item in items" :key="item.id" class="border-t"><td class="p-3 font-semibold">{{item.name}}</td><td class="capitalize">{{item.type.replace('_',' ')}}</td><td>{{formatUzs(item.hourlyPriceMinor)}}</td><td><UiStatusBadge :value="item.operationalStatus"/></td><td class="space-x-2"><button class="text-indigo-700" @click="edit(item)">Edit</button><button class="text-rose-700" :disabled="saving" @click="toggle(item)">{{item.operationalStatus==='enabled'?'Disable':'Enable'}}</button></td></tr></tbody></table><UiPagination :page="meta.page" :total="meta.total" :page-size="meta.pageSize" @update:page="load"/></div></main></template>
+<template>
+  <main class="page-wrap">
+    <div class="flex justify-between">
+      <h1 class="text-3xl font-black">Workspace management</h1>
+      <button class="btn-secondary" @click="load()">Refresh</button>
+    </div>
+    <p v-if="error" class="mt-4 rounded-xl bg-red-50 p-3 text-red-700">{{ error }}</p>
+    <p v-if="success" class="mt-4 rounded-xl bg-emerald-50 p-3 text-emerald-700">{{ success }}</p>
+    <form class="surface mt-6 grid gap-3 p-4 sm:grid-cols-5" @submit.prevent="submit">
+      <input v-model="name" class="field mt-0" placeholder="Workspace name" /><select
+        v-model="type"
+        class="field mt-0"
+      >
+        <option value="desk">Desk</option>
+        <option value="meeting_room">Meeting room</option>
+        <option value="private_office">Private office</option></select
+      ><input v-model.number="capacity" class="field mt-0" type="number" min="1" /><input
+        v-model.number="hourlyPriceMinor"
+        class="field mt-0"
+        type="number"
+        min="0"
+      />
+      <div class="flex gap-2">
+        <button class="btn-primary" :disabled="saving">{{ editing ? 'Update' : 'Create' }}</button
+        ><button v-if="editing" class="btn-secondary" type="button" @click="reset">Cancel</button>
+      </div>
+    </form>
+    <div v-if="loading" class="mt-6 h-32 animate-pulse rounded-2xl bg-slate-200" />
+    <div v-else class="table-shell mt-6">
+      <table class="w-full text-left text-sm">
+        <thead class="table-head">
+          <tr>
+            <th class="p-3">Name</th>
+            <th>Type</th>
+            <th>Price</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="!items.length">
+            <td colspan="5" class="p-8 text-center text-slate-600">
+              No workspaces have been created yet.
+            </td>
+          </tr>
+          <tr v-for="item in items" :key="item.id" class="border-t">
+            <td class="p-3 font-semibold">{{ item.name }}</td>
+            <td class="capitalize">{{ item.type.replace('_', ' ') }}</td>
+            <td>{{ formatUzs(item.hourlyPriceMinor) }}</td>
+            <td><UiStatusBadge :value="item.operationalStatus" /></td>
+            <td class="space-x-2">
+              <button class="text-indigo-700" @click="edit(item)">Edit</button
+              ><button class="text-rose-700" :disabled="saving" @click="toggle(item)">
+                {{ item.operationalStatus === 'enabled' ? 'Disable' : 'Enable' }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <UiPagination
+        :page="meta.page"
+        :total="meta.total"
+        :page-size="meta.pageSize"
+        @update:page="load"
+      />
+    </div>
+  </main>
+</template>

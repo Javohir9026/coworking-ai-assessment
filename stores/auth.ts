@@ -41,7 +41,8 @@ export const useAuthStore = defineStore('auth', () => {
       tokenCookie.value = response.accessToken
       userCookie.value = response.user
     } catch (error: unknown) {
-      errorMessage.value = error instanceof Error ? error.message : 'Login failed. Please try again.'
+      errorMessage.value =
+        error instanceof Error ? error.message : 'Login failed. Please try again.'
       throw error
     } finally {
       isLoading.value = false
