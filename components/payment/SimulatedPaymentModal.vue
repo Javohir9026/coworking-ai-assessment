@@ -12,7 +12,7 @@ const validationMessage = computed(() => props.reservation === null ? 'Select a 
 const totalCents = computed(() => props.reservation?.totalPriceMinor ?? 0)
 const commissionCents = computed(() => Math.trunc(totalCents.value / 10))
 const ownerCents = computed(() => totalCents.value - commissionCents.value)
-const formatCents = (amount: number): string => `$${Math.trunc(amount / 100).toLocaleString('en-US')}.${String(Math.abs(amount % 100)).padStart(2, '0')}`
+const formatCents = (amount: number): string => formatUzs(amount)
 
 function simulate(outcome: SimulationOutcome): void {
   if (validationMessage.value || hasSubmitted.value || props.isProcessing) return

@@ -11,13 +11,7 @@ const successMessage = ref<string | null>(null)
 const enabledResources = computed(() => resourceStore.items.filter((resource: Resource) => resource.operationalStatus === 'enabled'))
 const disabledResources = computed(() => resourceStore.items.filter((resource: Resource) => resource.operationalStatus === 'disabled'))
 
-function formatCents(amount: number, currency: string): string {
-  const absolute = Math.abs(amount)
-  const wholeUnits = Math.trunc(absolute / 100).toLocaleString('en-US')
-  const cents = String(absolute % 100).padStart(2, '0')
-  const prefix = amount < 0 ? '-' : ''
-  return currency === 'USD' ? `${prefix}$${wholeUnits}.${cents}` : `${prefix}${currency} ${wholeUnits}.${cents}`
-}
+function formatMoney(amount: number): string { return formatUzs(amount) }
 
 function beginReservation(resource: Resource): void {
   if (resource.operationalStatus === 'disabled') {
@@ -68,7 +62,7 @@ onMounted(resourceStore.fetchResources)
         <article v-for="resource in enabledResources" :key="resource.id" class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div class="flex items-start justify-between gap-3"><h3 class="text-lg font-bold text-slate-900">{{ resource.name }}</h3><span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">Active</span></div>
           <dl class="mt-5 space-y-2 text-sm text-slate-600"><div class="flex justify-between gap-3"><dt>Type</dt><dd class="font-medium text-slate-800">{{ resource.type.replace('_', ' ') }}</dd></div><div class="flex justify-between gap-3"><dt>Capacity</dt><dd class="font-medium text-slate-800">{{ resource.capacity }} people</dd></div></dl>
-          <p class="mt-5 text-xl font-bold text-slate-900">{{ formatCents(resource.hourlyPriceMinor, resource.currency) }}<span class="text-sm font-normal text-slate-500"> / hour</span></p>
+          <p class="mt-5 text-xl font-bold text-slate-900">{{ formatMoney(resource.hourlyPriceMinor) }}<span class="text-sm font-normal text-slate-500"> / hour</span></p>
           <button type="button" class="mt-5 w-full rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700" @click="beginReservation(resource)">Reserve</button>
         </article>
       </div>
@@ -79,7 +73,7 @@ onMounted(resourceStore.fetchResources)
           <article v-for="resource in disabledResources" :key="resource.id" class="rounded-xl border border-slate-200 bg-slate-50 p-5 opacity-75">
             <div class="flex items-start justify-between gap-3"><h3 class="text-lg font-bold text-slate-700">{{ resource.name }}</h3><span class="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">Disabled</span></div>
             <p class="mt-3 text-sm text-slate-600">{{ resource.type.replace('_', ' ') }} · {{ resource.capacity }} people</p>
-            <p class="mt-4 text-lg font-bold text-slate-700">{{ formatCents(resource.hourlyPriceMinor, resource.currency) }} / hour</p>
+            <p class="mt-4 text-lg font-bold text-slate-700">{{ formatMoney(resource.hourlyPriceMinor) }} / hour</p>
             <button type="button" disabled class="mt-5 w-full cursor-not-allowed rounded-lg bg-slate-300 px-4 py-2 font-semibold text-slate-600">Reservations unavailable</button>
           </article>
         </div>

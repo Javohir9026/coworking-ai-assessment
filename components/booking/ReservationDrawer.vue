@@ -25,7 +25,7 @@ const estimatedHours = computed(() => {
 const estimatedTotalCents = computed(() => (props.resource === null ? 0 : estimatedHours.value * props.resource.hourlyPriceMinor))
 const formattedEstimate = computed(() => {
   const amount = estimatedTotalCents.value
-  return `$${Math.trunc(amount / 100).toLocaleString('en-US')}.${String(amount % 100).padStart(2, '0')}`
+  return formatUzs(amount)
 })
 const isEmpty = computed(() => props.resource === null)
 

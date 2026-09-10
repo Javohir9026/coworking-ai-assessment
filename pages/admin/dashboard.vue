@@ -3,7 +3,7 @@ import { useApiClient } from '~/services/api-client'
 import type { DashboardSummary, ReservationsByStatusPoint, SuccessfulPaymentsByDayPoint } from '~/types/dashboard'
 definePageMeta({ layout: 'admin' })
 const summary = ref<DashboardSummary | null>(null); const statusPoints = ref<ReservationsByStatusPoint[]>([]); const paymentPoints = ref<SuccessfulPaymentsByDayPoint[]>([]); const loading = ref(true); const error = ref<string | null>(null); const success = ref<string | null>(null)
-const formatCents = (value: number) => `$${Math.trunc(value / 100).toLocaleString('en-US')}.${String(value % 100).padStart(2, '0')}`
+const formatCents = (value: number) => formatUzs(value)
 async function refresh(): Promise<void> { loading.value = true; error.value = null; try { const api = useApiClient(); const [summaryData, statuses, payments] = await Promise.all([api.request<DashboardSummary>('/admin/dashboard'), api.request<ReservationsByStatusPoint[]>('/admin/dashboard/reservations-by-status'), api.request<SuccessfulPaymentsByDayPoint[]>('/admin/dashboard/payments-by-day')]); summary.value = summaryData; statusPoints.value = statuses; paymentPoints.value = payments; success.value = 'Dashboard refreshed with the latest server data.' } catch (caught: unknown) { summary.value = null; statusPoints.value = []; paymentPoints.value = []; error.value = caught instanceof Error ? caught.message : 'Dashboard could not be loaded.' } finally { loading.value = false } }
 onMounted(refresh)
 </script>
