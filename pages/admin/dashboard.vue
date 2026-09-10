@@ -2,11 +2,76 @@
 import { BarController, BarElement, CategoryScale, Chart, Legend, LinearScale, Tooltip } from 'chart.js'
 import { useApiClient } from '~/services/api-client'
 import type { DashboardSummary, ReservationsByStatusPoint, SuccessfulPaymentsByDayPoint } from '~/types/dashboard'
+
 definePageMeta({ layout: 'admin' })
 Chart.register(BarController, BarElement, CategoryScale, Legend, LinearScale, Tooltip)
-const summary = ref<DashboardSummary | null>(null); const statusPoints = ref<ReservationsByStatusPoint[]>([]); const paymentPoints = ref<SuccessfulPaymentsByDayPoint[]>([]); const loading = ref(true); const error = ref<string | null>(null); const statusCanvas = ref<HTMLCanvasElement | null>(null); const paymentCanvas = ref<HTMLCanvasElement | null>(null); let statusChart: Chart | undefined; let paymentChart: Chart | undefined
-function draw(): void { statusChart?.destroy(); paymentChart?.destroy(); if (statusCanvas.value && statusPoints.value.length) statusChart = new Chart(statusCanvas.value, { type: 'bar', data: { labels: statusPoints.value.map((x: ReservationsByStatusPoint) => x.status), datasets: [{ label: 'Reservations', data: statusPoints.value.map((x: ReservationsByStatusPoint) => x.count), backgroundColor: '#4f46e5' }] } }); if (paymentCanvas.value && paymentPoints.value.length) paymentChart = new Chart(paymentCanvas.value, { type: 'bar', data: { labels: paymentPoints.value.map((x: SuccessfulPaymentsByDayPoint) => x.date), datasets: [{ label: 'Payments (UZS)', data: paymentPoints.value.map((x: SuccessfulPaymentsByDayPoint) => x.amountMinor), backgroundColor: '#059669' }] } }) }
-async function refresh(): Promise<void> { loading.value = true; error.value = null; try { const api = useApiClient(); const [a,b,c] = await Promise.all([api.request<DashboardSummary>('/admin/dashboard'),api.request<ReservationsByStatusPoint[]>('/admin/dashboard/reservations-by-status'),api.request<SuccessfulPaymentsByDayPoint[]>('/admin/dashboard/payments-by-day')]); summary.value=a; statusPoints.value=b; paymentPoints.value=c; await nextTick(); draw() } catch (caught: unknown) { summary.value=null; error.value=caught instanceof Error ? caught.message : 'Dashboard could not be loaded.' } finally { loading.value=false } }
-onMounted(refresh); onBeforeUnmount(() => { statusChart?.destroy(); paymentChart?.destroy() })
+
+const summary = ref<DashboardSummary | null>(null)
+const statusPoints = ref<ReservationsByStatusPoint[]>([])
+const paymentPoints = ref<SuccessfulPaymentsByDayPoint[]>([])
+const from = ref('')
+const to = ref('')
+const loading = ref(true)
+const error = ref<string | null>(null)
+const statusCanvas = ref<HTMLCanvasElement | null>(null)
+const paymentCanvas = ref<HTMLCanvasElement | null>(null)
+let statusChart: Chart | undefined
+let paymentChart: Chart | undefined
+
+function draw(): void {
+  statusChart?.destroy(); paymentChart?.destroy()
+  if (statusCanvas.value && statusPoints.value.length) statusChart = new Chart(statusCanvas.value, { type: 'bar', data: { labels: statusPoints.value.map((x: ReservationsByStatusPoint) => x.status), datasets: [{ label: 'Reservations', data: statusPoints.value.map((x: ReservationsByStatusPoint) => x.count), backgroundColor: '#4f46e5' }] } })
+  if (paymentCanvas.value && paymentPoints.value.length) paymentChart = new Chart(paymentCanvas.value, { type: 'bar', data: { labels: paymentPoints.value.map((x: SuccessfulPaymentsByDayPoint) => x.date), datasets: [{ label: 'Payments (UZS)', data: paymentPoints.value.map((x: SuccessfulPaymentsByDayPoint) => x.amountMinor), backgroundColor: '#059669' }] } })
+}
+
+function query(): string {
+  if (!from.value && !to.value) return ''
+  if (!from.value || !to.value) throw new Error('Choose both range dates or clear both fields.')
+  if (from.value > to.value) throw new Error('The start date must not be after the end date.')
+  return `?from=${encodeURIComponent(from.value)}&to=${encodeURIComponent(to.value)}`
+}
+
+async function refresh(): Promise<void> {
+  loading.value = true; error.value = null
+  try {
+    const api = useApiClient(); const suffix = query()
+    const [a, b, c] = await Promise.all([
+      api.request<DashboardSummary>(`/admin/dashboard${suffix}`),
+      api.request<ReservationsByStatusPoint[]>(`/admin/dashboard/reservations-by-status${suffix}`),
+      api.request<SuccessfulPaymentsByDayPoint[]>(`/admin/dashboard/payments-by-day${suffix}`)
+    ])
+    summary.value = a; statusPoints.value = b; paymentPoints.value = c
+    await nextTick(); draw()
+  } catch (caught: unknown) {
+    summary.value = null; error.value = caught instanceof Error ? caught.message : 'Dashboard could not be loaded.'
+  } finally { loading.value = false }
+}
+
+onMounted(refresh)
+onBeforeUnmount(() => { statusChart?.destroy(); paymentChart?.destroy() })
 </script>
-<template><main class="mx-auto max-w-6xl px-6 py-10"><header class="flex justify-between"><h1 class="text-3xl font-bold">Operations dashboard</h1><button class="rounded border px-4" :disabled="loading" @click="refresh">Refresh</button></header><p v-if="error" class="mt-5 rounded bg-red-50 p-3 text-red-700">{{ error }}</p><div v-if="loading" class="mt-8 h-32 animate-pulse rounded bg-slate-100"/><template v-else-if="summary"><p class="mt-5 text-sm text-slate-600">Range: {{ summary.dateRange.from === 'all' ? 'All recorded data' : `${summary.dateRange.from} – ${summary.dateRange.to}` }}</p><section class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><article v-for="metric in [{label:'Resources',value:summary.totalResources},{label:'Reservations',value:summary.totalReservations},{label:'Confirmed',value:summary.confirmedReservations},{label:'Revenue',value:formatUzs(summary.successfulPaymentAmountMinor)}]" :key="metric.label" class="rounded border p-5"><p>{{ metric.label }}</p><strong class="text-2xl">{{ metric.value }}</strong></article></section><section class="mt-8 grid gap-6 lg:grid-cols-2"><article class="rounded border p-5"><h2 class="font-bold">Reservations by status</h2><p v-if="!statusPoints.length">No reservations in range.</p><canvas v-else ref="statusCanvas"/></article><article class="rounded border p-5"><h2 class="font-bold">Successful payments by day</h2><p v-if="!paymentPoints.length">No successful payments in range.</p><canvas v-else ref="paymentCanvas"/></article></section></template></main></template>
+
+<template>
+  <main class="mx-auto max-w-6xl px-6 py-10">
+    <header class="flex flex-wrap items-center justify-between gap-4">
+      <h1 class="text-3xl font-bold">Operations dashboard</h1>
+      <div class="flex flex-wrap items-end gap-2">
+        <label class="text-sm">From<input v-model="from" class="mt-1 block rounded border px-3 py-2" type="date"></label>
+        <label class="text-sm">To<input v-model="to" class="mt-1 block rounded border px-3 py-2" type="date"></label>
+        <button class="rounded border px-4 py-2" :disabled="loading" @click="refresh">Refresh</button>
+      </div>
+    </header>
+    <p v-if="error" class="mt-5 rounded bg-red-50 p-3 text-red-700">{{ error }}</p>
+    <div v-if="loading" class="mt-8 h-32 animate-pulse rounded bg-slate-100"/>
+    <template v-else-if="summary">
+      <p class="mt-5 text-sm text-slate-600">Range: {{ summary.dateRange.from === 'all' ? 'All recorded data' : `${summary.dateRange.from} – ${summary.dateRange.to}` }}</p>
+      <section class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <article v-for="metric in [{label:'Resources',value:summary.totalResources},{label:'Reservations',value:summary.totalReservations},{label:'Confirmed',value:summary.confirmedReservations},{label:'Revenue',value:formatUzs(summary.successfulPaymentAmountMinor)}]" :key="metric.label" class="rounded border p-5"><p>{{ metric.label }}</p><strong class="text-2xl">{{ metric.value }}</strong></article>
+      </section>
+      <section class="mt-8 grid gap-6 lg:grid-cols-2">
+        <article class="rounded border p-5"><h2 class="font-bold">Reservations by status</h2><p v-if="!statusPoints.length">No reservations in range.</p><canvas v-else ref="statusCanvas"/></article>
+        <article class="rounded border p-5"><h2 class="font-bold">Successful payments by day</h2><p v-if="!paymentPoints.length">No successful payments in range.</p><canvas v-else ref="paymentCanvas"/></article>
+      </section>
+    </template>
+  </main>
+</template>
