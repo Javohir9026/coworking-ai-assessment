@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { useApiClient } from '~/services/api-client'
-import { mockResources } from '~/services/mock-data'
 import type { Resource } from '~/types/resource'
 
 export const useResourceStore = defineStore('resource', () => {
@@ -15,9 +14,9 @@ export const useResourceStore = defineStore('resource', () => {
     try {
       const api = useApiClient()
       items.value = await api.request<Resource[]>('/resources')
-    } catch {
-      items.value = mockResources
-      errorMessage.value = null
+    } catch (error: unknown) {
+      items.value = []
+      errorMessage.value = error instanceof Error ? error.message : 'Resources could not be loaded.'
     } finally {
       isLoading.value = false
     }

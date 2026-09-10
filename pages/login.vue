@@ -16,8 +16,8 @@ const credentialsSchema = z.object({
 })
 
 const demoUsers = [
-  { label: 'Member demo', email: 'member@coworking.test', password: 'Member123!' },
-  { label: 'Admin demo', email: 'admin@coworking.test', password: 'Admin123!' }
+  { label: 'Member demo', email: 'member@cowork.uz', password: 'DemoPass123!' },
+  { label: 'Admin demo', email: 'admin@cowork.uz', password: 'DemoPass123!' }
 ] as const
 
 const isEmpty = computed(() => !submitted.value && email.value.length === 0 && password.value.length === 0)
