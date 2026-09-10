@@ -1,6 +1,4 @@
-<template>
-  <section>
-    <h1>Audit logs</h1>
-    <!-- TODO: Action va target type filterlari bilan append-only audit loglar ko'rinishi. -->
-  </section>
-</template>
+<script setup lang="ts">
+definePageMeta({ middleware: 'admin' })
+await navigateTo('/admin/audit')
+</script>
