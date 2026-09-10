@@ -2,10 +2,154 @@
 import { useApiClient } from '~/services/api-client'
 import type { Reservation, ReservationStatus } from '~/types/reservation'
 definePageMeta({ layout: 'admin' })
-const items = ref<Reservation[]>([]); const status = ref<ReservationStatus | ''>(''); const loading = ref(true); const error = ref<string | null>(null); const success = ref<string | null>(null); const rejectTarget = ref<Reservation | null>(null); const reason = ref(''); const validation = ref<string | null>(null); const mutatingId = ref<string | null>(null)
-async function load(): Promise<void> { loading.value = true; error.value = null; try { const api = useApiClient(); items.value = await api.request<Reservation[]>('/admin/reservations', status.value ? { query: { status: status.value } } : {}) } catch (caught: unknown) { items.value = []; error.value = caught instanceof Error ? caught.message : 'Reservations could not be loaded.' } finally { loading.value = false } }
-async function approve(item: Reservation): Promise<void> { mutatingId.value = item.id; try { await useApiClient().request(`/reservations/${item.id}/approve`, { method: 'PATCH' }); success.value = 'Reservation approved and moved to awaiting payment.'; await load() } catch (caught: unknown) { error.value = caught instanceof Error ? caught.message : 'Approval failed.' } finally { mutatingId.value = null } }
-async function reject(): Promise<void> { if (!rejectTarget.value || !reason.value.trim()) { validation.value = 'A rejection reason is required.'; return }; mutatingId.value = rejectTarget.value.id; try { await useApiClient().request(`/reservations/${rejectTarget.value.id}/reject`, { method: 'PATCH', body: { reason: reason.value.trim() } }); success.value = 'Reservation rejected.'; rejectTarget.value = null; reason.value = ''; await load() } catch (caught: unknown) { error.value = caught instanceof Error ? caught.message : 'Rejection failed.' } finally { mutatingId.value = null } }
+const items = ref<Reservation[]>([])
+const status = ref<ReservationStatus | ''>('')
+const loading = ref(true)
+const error = ref<string | null>(null)
+const success = ref<string | null>(null)
+const rejectTarget = ref<Reservation | null>(null)
+const reason = ref('')
+const validation = ref<string | null>(null)
+const mutatingId = ref<string | null>(null)
+const page = ref(1)
+const pageSize = 10
+const paginatedItems = computed(() =>
+  items.value.slice((page.value - 1) * pageSize, page.value * pageSize)
+)
+async function load(): Promise<void> {
+  loading.value = true
+  error.value = null
+  try {
+    const api = useApiClient()
+    items.value = await api.request<Reservation[]>(
+      '/admin/reservations',
+      status.value ? { query: { status: status.value } } : {}
+    )
+    page.value = 1
+  } catch (caught: unknown) {
+    items.value = []
+    error.value = caught instanceof Error ? caught.message : 'Reservations could not be loaded.'
+  } finally {
+    loading.value = false
+  }
+}
+async function approve(item: Reservation): Promise<void> {
+  mutatingId.value = item.id
+  try {
+    await useApiClient().request(`/reservations/${item.id}/approve`, { method: 'PATCH' })
+    success.value = 'Reservation approved and moved to awaiting payment.'
+    await load()
+  } catch (caught: unknown) {
+    error.value = caught instanceof Error ? caught.message : 'Approval failed.'
+  } finally {
+    mutatingId.value = null
+  }
+}
+async function reject(): Promise<void> {
+  if (!rejectTarget.value || !reason.value.trim()) {
+    validation.value = 'A rejection reason is required.'
+    return
+  }
+  mutatingId.value = rejectTarget.value.id
+  try {
+    await useApiClient().request(`/reservations/${rejectTarget.value.id}/reject`, {
+      method: 'PATCH',
+      body: { reason: reason.value.trim() }
+    })
+    success.value = 'Reservation rejected.'
+    rejectTarget.value = null
+    reason.value = ''
+    await load()
+  } catch (caught: unknown) {
+    error.value = caught instanceof Error ? caught.message : 'Rejection failed.'
+  } finally {
+    mutatingId.value = null
+  }
+}
 onMounted(load)
 </script>
-<template><main class="mx-auto max-w-6xl px-6 py-10"><h1 class="text-3xl font-bold">Reservation management</h1><div class="mt-5 flex gap-3"><select v-model="status" class="rounded border px-3 py-2" @change="load"><option value="">All statuses</option><option v-for="value in ['pending','approved','awaiting_payment','confirmed','rejected','cancelled','expired']" :key="value" :value="value">{{ value }}</option></select><button class="rounded border px-4" @click="load">Refresh</button></div><p v-if="error" class="mt-4 rounded bg-red-50 p-3 text-red-700">{{ error }}</p><p v-if="success" class="mt-4 rounded bg-emerald-50 p-3 text-emerald-700">{{ success }}</p><div v-if="loading" class="mt-6 h-32 animate-pulse rounded bg-slate-100" /><p v-else-if="!items.length" class="mt-6 rounded border border-dashed p-8 text-center">No reservations match this filter.</p><div v-else class="mt-6 overflow-x-auto rounded border"><table class="w-full text-left text-sm"><thead class="bg-slate-50"><tr><th class="p-3">Resource</th><th>Status</th><th>Time</th><th class="p-3">Action</th></tr></thead><tbody><tr v-for="item in items" :key="item.id" class="border-t"><td class="p-3">{{ item.resourceId }}</td><td>{{ item.status }}</td><td>{{ new Date(item.startAt).toLocaleString() }}</td><td class="p-3"><button v-if="item.status === 'pending'" class="mr-2 text-emerald-700" :disabled="mutatingId === item.id" @click="approve(item)">Approve</button><button v-if="item.status === 'pending'" class="text-rose-700" :disabled="mutatingId === item.id" @click="rejectTarget = item">Reject</button></td></tr></tbody></table></div><div v-if="rejectTarget" class="fixed inset-0 grid place-items-center bg-slate-950/40 p-4"><form class="w-full max-w-md rounded bg-white p-6" @submit.prevent="reject"><h2 class="text-xl font-bold">Reject reservation</h2><textarea v-model="reason" class="mt-4 w-full rounded border p-3" placeholder="Mandatory rejection reason" /><p v-if="validation" class="mt-2 text-sm text-rose-700">{{ validation }}</p><div class="mt-4 flex gap-3"><button class="rounded bg-rose-600 px-4 py-2 text-white">Confirm rejection</button><button type="button" class="rounded border px-4" @click="rejectTarget = null">Cancel</button></div></form></div></main></template>
+<template>
+  <main class="mx-auto max-w-6xl px-6 py-10">
+    <h1 class="text-3xl font-bold">Reservation management</h1>
+    <div class="mt-5 flex gap-3">
+      <select v-model="status" class="rounded border px-3 py-2" @change="load">
+        <option value="">All statuses</option>
+        <option
+          v-for="value in [
+            'pending',
+            'approved',
+            'awaiting_payment',
+            'confirmed',
+            'rejected',
+            'cancelled',
+            'expired'
+          ]"
+          :key="value"
+          :value="value"
+        >
+          {{ value }}
+        </option></select
+      ><button class="rounded border px-4" @click="load">Refresh</button>
+    </div>
+    <p v-if="error" class="mt-4 rounded bg-red-50 p-3 text-red-700">{{ error }}</p>
+    <p v-if="success" class="mt-4 rounded bg-emerald-50 p-3 text-emerald-700">{{ success }}</p>
+    <div v-if="loading" class="mt-6 h-32 animate-pulse rounded bg-slate-100" />
+    <p v-else-if="!items.length" class="mt-6 rounded border border-dashed p-8 text-center">
+      No reservations match this filter.
+    </p>
+    <div v-else class="mt-6 overflow-x-auto rounded border">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="p-3">Resource</th>
+            <th>Status</th>
+            <th>Time</th>
+            <th class="p-3">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in paginatedItems" :key="item.id" class="border-t">
+            <td class="p-3">{{ item.resourceId }}</td>
+            <td>{{ item.status }}</td>
+            <td>{{ new Date(item.startAt).toLocaleString() }}</td>
+            <td class="p-3">
+              <button
+                v-if="item.status === 'pending'"
+                class="mr-2 text-emerald-700"
+                :disabled="mutatingId === item.id"
+                @click="approve(item)"
+              >
+                Approve</button
+              ><button
+                v-if="item.status === 'pending'"
+                class="text-rose-700"
+                :disabled="mutatingId === item.id"
+                @click="rejectTarget = item"
+              >
+                Reject
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <UiPagination v-model:page="page" :total="items.length" :page-size="pageSize" />
+    </div>
+    <div v-if="rejectTarget" class="fixed inset-0 grid place-items-center bg-slate-950/40 p-4">
+      <form class="w-full max-w-md rounded bg-white p-6" @submit.prevent="reject">
+        <h2 class="text-xl font-bold">Reject reservation</h2>
+        <textarea
+          v-model="reason"
+          class="mt-4 w-full rounded border p-3"
+          placeholder="Mandatory rejection reason"
+        />
+        <p v-if="validation" class="mt-2 text-sm text-rose-700">{{ validation }}</p>
+        <div class="mt-4 flex gap-3">
+          <button class="rounded bg-rose-600 px-4 py-2 text-white">Confirm rejection</button
+          ><button type="button" class="rounded border px-4" @click="rejectTarget = null">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+</template>
