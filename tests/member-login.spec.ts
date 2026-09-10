@@ -47,3 +47,44 @@ test('administrator can open every operational module', async ({ page }) => {
     await expect(page.getByRole('heading', { name: heading })).toBeVisible()
   }
 })
+
+test('member reservation is approved and confirmed through the live UI flow', async ({ page }) => {
+  const start = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+  start.setMinutes(0, 0, 0)
+  const end = new Date(start.getTime() + 60 * 60 * 1000)
+  const localDateTime = (value: Date) => {
+    const pad = (part: number) => String(part).padStart(2, '0')
+    return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`
+  }
+
+  await signIn(page, 'Member')
+  await page.getByRole('button', { name: 'Reserve' }).first().click()
+  await page.getByLabel('Start time (local)').fill(localDateTime(start))
+  await page.getByLabel('End time (local)').fill(localDateTime(end))
+  await page.getByRole('button', { name: 'Request reservation' }).click()
+  await expect(page.getByRole('heading', { name: 'Reservation created' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled()
+
+  await page.context().clearCookies()
+  await signIn(page, 'Admin')
+  await page.goto('/admin/reservations')
+  await page
+    .getByRole('button', { name: /Approve .* booking/ })
+    .first()
+    .click()
+  await expect(page.getByText('Reservation approved.')).toBeVisible()
+
+  await page.context().clearCookies()
+  await signIn(page, 'Member')
+  await page.goto('/reservations')
+  await page.getByRole('link', { name: 'Pay now' }).first().click()
+  const paymentResponse = page.waitForResponse(
+    (response) =>
+      response.url().includes('/payments/simulate') && response.request().method() === 'POST'
+  )
+  await page.getByRole('button', { name: 'Trigger Success Webhook' }).click()
+  await expect((await paymentResponse).status()).toBe(201)
+  await expect(
+    page.getByText('Payment can only be simulated for reservations awaiting payment.')
+  ).toBeVisible()
+})

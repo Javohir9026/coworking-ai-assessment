@@ -2,7 +2,10 @@
 import { useApiClient } from '~/services/api-client'
 import type { LedgerEntry } from '~/types/ledger'
 import type { Payment } from '~/types/payment'
-import type { PaginatedResult } from '~/types/api'
+
+interface PaymentDetail extends Payment {
+  ledger: LedgerEntry[]
+}
 
 definePageMeta({ layout: 'admin' })
 const route = useRoute()
@@ -11,18 +14,9 @@ const ledger = ref<LedgerEntry[]>([])
 const error = ref<string | null>(null)
 onMounted(async () => {
   try {
-    const api = useApiClient()
-    const [payments, entries] = await Promise.all([
-      api.request<PaginatedResult<Payment>>('/admin/payments', {
-        query: { page: 1, pageSize: 100 }
-      }),
-      api.request<PaginatedResult<LedgerEntry>>('/admin/ledger', {
-        query: { page: 1, pageSize: 100 }
-      })
-    ])
-    payment.value = payments.items.find((item) => item.id === route.params.id) ?? null
-    ledger.value = entries.items.filter((entry) => entry.paymentId === route.params.id)
-    if (!payment.value) error.value = 'Payment was not found.'
+    const detail = await useApiClient().request<PaymentDetail>(`/admin/payments/${route.params.id}`)
+    payment.value = detail
+    ledger.value = detail.ledger
   } catch (caught: unknown) {
     error.value = caught instanceof Error ? caught.message : 'Payment could not be loaded.'
   }
