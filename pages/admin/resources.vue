@@ -14,6 +14,11 @@ const saving = ref(false)
 const error = ref<string | null>(null)
 const success = ref<string | null>(null)
 const meta = ref({ total: 0, page: 1, pageSize: 10 })
+const resourceTypeOptions = [
+  { value: 'desk', label: 'Desk' },
+  { value: 'meeting_room', label: 'Meeting room' },
+  { value: 'private_office', label: 'Private office' }
+] as const
 async function load(page = meta.value.page) {
   loading.value = true
   try {
@@ -101,14 +106,12 @@ onMounted(load)
     <p v-if="error" class="mt-4 rounded-xl bg-red-50 p-3 text-red-700">{{ error }}</p>
     <p v-if="success" class="mt-4 rounded-xl bg-emerald-50 p-3 text-emerald-700">{{ success }}</p>
     <form class="surface mt-6 grid gap-3 p-4 sm:grid-cols-5" @submit.prevent="submit">
-      <input v-model="name" class="field mt-0" placeholder="Workspace name" /><select
+      <input v-model="name" class="field mt-0" placeholder="Workspace name" /><UiSelect
         v-model="type"
-        class="field mt-0"
-      >
-        <option value="desk">Desk</option>
-        <option value="meeting_room">Meeting room</option>
-        <option value="private_office">Private office</option></select
-      ><input v-model.number="capacity" class="field mt-0" type="number" min="1" /><input
+        label="Workspace type"
+        :options="resourceTypeOptions"
+      />
+      <input v-model.number="capacity" class="field mt-0" type="number" min="1" /><input
         v-model.number="hourlyPriceMinor"
         class="field mt-0"
         type="number"

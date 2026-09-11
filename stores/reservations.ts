@@ -40,10 +40,24 @@ export const useReservationsStore = defineStore('reservations', () => {
     return useApiClient().request<Reservation>(`/reservations/${id}`)
   }
   async function createHold(payload: CreateReservationPayload): Promise<ReservationHold> {
-    return useApiClient().request<ReservationHold>('/reservations/hold', {
-      method: 'POST',
-      body: payload
-    })
+    isLoading.value = true
+    errorMessage.value = null
+    try {
+      return await useApiClient().request<ReservationHold>('/reservations/hold', {
+        method: 'POST',
+        body: payload
+      })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : ''
+      errorMessage.value =
+        message === 'Resource is unavailable for this interval' ||
+        message === 'Resource is temporarily held'
+          ? 'This workspace is unavailable for the selected time. Please choose a different time.'
+          : message || 'The temporary reservation hold could not be created. Please try again.'
+      throw error
+    } finally {
+      isLoading.value = false
+    }
   }
   async function create(
     payload: CreateReservationPayload & { holdKey: string }
@@ -78,6 +92,15 @@ export const useReservationsStore = defineStore('reservations', () => {
     if (index >= 0) items.value[index] = result.reservation
     return result.reservation
   }
+  async function cancelReservation(reservationId: string): Promise<Reservation> {
+    const item = await useApiClient().request<Reservation>(`/reservations/${reservationId}/cancel`, {
+      method: 'PATCH'
+    })
+    const index = items.value.findIndex((entry: Reservation) => entry.id === reservationId)
+    if (index >= 0) items.value[index] = item
+    successMessage.value = 'Reservation cancelled.'
+    return item
+  }
   return {
     items,
     isLoading,
@@ -88,6 +111,7 @@ export const useReservationsStore = defineStore('reservations', () => {
     fetchOne,
     createHold,
     create,
+    cancelReservation,
     simulatePayment
   }
 })

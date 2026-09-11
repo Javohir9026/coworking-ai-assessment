@@ -13,7 +13,9 @@ const emit = defineEmits<{ simulate: [outcome: SimulationOutcome]; close: [] }>(
 const hasSubmitted = ref(false)
 const localSuccess = ref<string | null>(null)
 const validationMessage = computed(() =>
-  props.reservation === null
+  hasSubmitted.value
+    ? null
+    : props.reservation === null
     ? 'Select a reservation to pay.'
     : props.reservation.status !== 'awaiting_payment'
       ? 'Payment can only be simulated for reservations awaiting payment.'

@@ -11,6 +11,16 @@ const success = ref<string | null>(null)
 const meta = ref({ total: 0, page: 1, pageSize: 10 })
 const rejectTarget = ref<Reservation | null>(null)
 const reason = ref('')
+const statusOptions = [
+  { value: '', label: 'All statuses' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'awaiting_payment', label: 'Awaiting payment' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'expired', label: 'Expired' }
+] as const
 async function load(page = meta.value.page) {
   loading.value = true
   try {
@@ -69,24 +79,12 @@ onMounted(load)
         <p class="section-kicker">Operations</p>
         <h1 class="mt-1 text-3xl font-black">Bookings</h1>
       </div>
-      <select v-model="status" class="field w-52">
-        <option value="">All statuses</option>
-        <option
-          v-for="value in [
-            'pending',
-            'approved',
-            'awaiting_payment',
-            'confirmed',
-            'rejected',
-            'cancelled',
-            'expired'
-          ]"
-          :key="value"
-          :value="value"
-        >
-          {{ value }}
-        </option>
-      </select>
+      <UiSelect
+        v-model="status"
+        label="Reservation status"
+        class="w-52"
+        :options="statusOptions"
+      />
     </div>
     <p v-if="error" class="mt-4 rounded-xl bg-red-50 p-3 text-red-700">{{ error }}</p>
     <p v-if="success" class="mt-4 rounded-xl bg-emerald-50 p-3 text-emerald-700">{{ success }}</p>

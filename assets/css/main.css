@@ -40,6 +40,15 @@
   .field {
     @apply mt-1 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-indigo-500;
   }
+  .date-field {
+    @apply relative mt-1 block;
+  }
+  .date-field input {
+    @apply block w-44 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm transition hover:border-indigo-300 focus:border-indigo-500;
+  }
+  .filter-chip {
+    @apply rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs font-semibold text-slate-600 transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700;
+  }
   .section-kicker {
     @apply text-xs font-bold uppercase tracking-[0.18em] text-indigo-600;
   }

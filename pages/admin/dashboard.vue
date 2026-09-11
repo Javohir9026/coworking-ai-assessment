@@ -1,13 +1,4 @@
 <script setup lang="ts">
-import {
-  BarController,
-  BarElement,
-  CategoryScale,
-  Chart,
-  Legend,
-  LinearScale,
-  Tooltip
-} from 'chart.js'
 import { useApiClient } from '~/services/api-client'
 import type {
   DashboardSummary,
@@ -16,7 +7,6 @@ import type {
 } from '~/types/dashboard'
 
 definePageMeta({ layout: 'admin' })
-Chart.register(BarController, BarElement, CategoryScale, Legend, LinearScale, Tooltip)
 
 const summary = ref<DashboardSummary | null>(null)
 const statusPoints = ref<ReservationsByStatusPoint[]>([])
@@ -25,43 +15,13 @@ const from = ref('')
 const to = ref('')
 const loading = ref(true)
 const error = ref<string | null>(null)
-const statusCanvas = ref<HTMLCanvasElement | null>(null)
-const paymentCanvas = ref<HTMLCanvasElement | null>(null)
-let statusChart: Chart | undefined
-let paymentChart: Chart | undefined
-
-function draw(): void {
-  statusChart?.destroy()
-  paymentChart?.destroy()
-  if (statusCanvas.value && statusPoints.value.length)
-    statusChart = new Chart(statusCanvas.value, {
-      type: 'bar',
-      data: {
-        labels: statusPoints.value.map((x: ReservationsByStatusPoint) => x.status),
-        datasets: [
-          {
-            label: 'Reservations',
-            data: statusPoints.value.map((x: ReservationsByStatusPoint) => x.count),
-            backgroundColor: '#4f46e5'
-          }
-        ]
-      }
-    })
-  if (paymentCanvas.value && paymentPoints.value.length)
-    paymentChart = new Chart(paymentCanvas.value, {
-      type: 'bar',
-      data: {
-        labels: paymentPoints.value.map((x: SuccessfulPaymentsByDayPoint) => x.date),
-        datasets: [
-          {
-            label: 'Payments (UZS)',
-            data: paymentPoints.value.map((x: SuccessfulPaymentsByDayPoint) => x.amountMinor),
-            backgroundColor: '#059669'
-          }
-        ]
-      }
-    })
-}
+let filterTimer: ReturnType<typeof setTimeout> | undefined
+const maxStatusCount = computed(() =>
+  Math.max(1, ...statusPoints.value.map((point: ReservationsByStatusPoint) => point.count))
+)
+const maxPaymentAmount = computed(() =>
+  Math.max(1, ...paymentPoints.value.map((point: SuccessfulPaymentsByDayPoint) => point.amountMinor))
+)
 
 function query(): string {
   if (!from.value && !to.value) return ''
@@ -84,8 +44,6 @@ async function refresh(): Promise<void> {
     summary.value = a
     statusPoints.value = b
     paymentPoints.value = c
-    await nextTick()
-    draw()
   } catch (caught: unknown) {
     summary.value = null
     error.value = caught instanceof Error ? caught.message : 'Dashboard could not be loaded.'
@@ -93,11 +51,28 @@ async function refresh(): Promise<void> {
     loading.value = false
   }
 }
-
+function scheduleRefresh(): void {
+  if (filterTimer) clearTimeout(filterTimer)
+  if ((from.value && !to.value) || (!from.value && to.value)) return
+  filterTimer = setTimeout(() => void refresh(), 250)
+}
+function setDateRange(days: number | null): void {
+  if (days === null) {
+    from.value = ''
+    to.value = ''
+    return
+  }
+  const end = new Date()
+  const start = new Date(end)
+  start.setDate(end.getDate() - (days - 1))
+  const asInputDate = (value: Date) => value.toISOString().slice(0, 10)
+  from.value = asInputDate(start)
+  to.value = asInputDate(end)
+}
+watch([from, to], scheduleRefresh)
 onMounted(refresh)
 onBeforeUnmount(() => {
-  statusChart?.destroy()
-  paymentChart?.destroy()
+  if (filterTimer) clearTimeout(filterTimer)
 })
 </script>
 
@@ -105,16 +80,18 @@ onBeforeUnmount(() => {
   <main class="mx-auto max-w-6xl px-6 py-10">
     <header class="flex flex-wrap items-center justify-between gap-4">
       <h1 class="text-3xl font-bold">Operations dashboard</h1>
-      <div class="flex flex-wrap items-end gap-2">
-        <label class="text-sm"
-          >From<input v-model="from" class="mt-1 block rounded border px-3 py-2" type="date"
-        /></label>
-        <label class="text-sm"
-          >To<input v-model="to" class="mt-1 block rounded border px-3 py-2" type="date"
-        /></label>
-        <button class="rounded border px-4 py-2" :disabled="loading" @click="refresh">
-          Refresh
-        </button>
+      <div class="surface flex flex-wrap items-end gap-3 p-3">
+        <label class="text-sm font-semibold text-slate-700">From
+          <span class="date-field"><input v-model="from" type="date" aria-label="From" /></span>
+        </label>
+        <label class="text-sm font-semibold text-slate-700">To
+          <span class="date-field"><input v-model="to" type="date" aria-label="To" /></span>
+        </label>
+        <div class="flex flex-wrap gap-1" aria-label="Quick date filters">
+          <button class="filter-chip" type="button" @click="setDateRange(7)">7 days</button>
+          <button class="filter-chip" type="button" @click="setDateRange(30)">30 days</button>
+          <button class="filter-chip" type="button" @click="setDateRange(null)">All time</button>
+        </div>
       </div>
     </header>
     <p v-if="error" class="mt-5 rounded bg-red-50 p-3 text-red-700">{{ error }}</p>
@@ -144,15 +121,26 @@ onBeforeUnmount(() => {
         </article>
       </section>
       <section class="mt-8 grid gap-6 lg:grid-cols-2">
-        <article class="rounded border p-5">
-          <h2 class="font-bold">Reservations by status</h2>
-          <p v-if="!statusPoints.length">No reservations in range.</p>
-          <canvas v-else ref="statusCanvas" />
+        <article class="surface p-5">
+          <div class="flex items-center justify-between"><h2 class="font-bold">Reservations by status</h2><span class="text-xs text-slate-500">Live totals</span></div>
+          <div class="mt-6 space-y-4">
+            <div v-for="point in statusPoints" :key="point.status" class="grid grid-cols-[115px_1fr_auto] items-center gap-3 text-sm">
+              <span class="capitalize text-slate-600">{{ point.status.replace('_', ' ') }}</span>
+              <div class="h-2.5 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-indigo-600 transition-all duration-500" :style="{ width: `${(point.count / maxStatusCount) * 100}%` }" /></div>
+              <strong>{{ point.count }}</strong>
+            </div>
+          </div>
         </article>
-        <article class="rounded border p-5">
-          <h2 class="font-bold">Successful payments by day</h2>
+        <article class="surface p-5">
+          <div class="flex items-center justify-between"><h2 class="font-bold">Successful payments by day</h2><span class="text-xs text-slate-500">UZS</span></div>
           <p v-if="!paymentPoints.length">No successful payments in range.</p>
-          <canvas v-else ref="paymentCanvas" />
+          <div v-else class="mt-6 flex h-52 items-end gap-3 border-b border-slate-200 px-2">
+            <div v-for="point in paymentPoints" :key="point.date" class="flex h-full min-w-12 flex-1 flex-col justify-end text-center">
+              <span class="mb-2 text-xs font-semibold text-emerald-700">{{ formatUzs(point.amountMinor) }}</span>
+              <div class="rounded-t-lg bg-emerald-500 transition-all duration-500" :style="{ height: `${Math.max(6, (point.amountMinor / maxPaymentAmount) * 100)}%` }" />
+              <span class="mt-2 whitespace-nowrap text-[11px] text-slate-500">{{ point.date.slice(5) }}</span>
+            </div>
+          </div>
         </article>
       </section>
     </template>

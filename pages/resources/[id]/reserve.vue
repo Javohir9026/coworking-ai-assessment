@@ -28,11 +28,15 @@ async function create(payload: {
   startAt: string
   endAt: string
 }): Promise<void> {
-  const hold = await reservations.createHold(payload)
-  const reservation = await reservations.create({ ...payload, holdKey: hold.holdKey })
-  createdId.value = reservation.id
-  createdReservation.value = reservation
-  statusTimer = setInterval(refreshStatus, 10_000)
+  try {
+    const hold = await reservations.createHold(payload)
+    const reservation = await reservations.create({ ...payload, holdKey: hold.holdKey })
+    createdId.value = reservation.id
+    createdReservation.value = reservation
+    statusTimer = setInterval(refreshStatus, 10_000)
+  } catch {
+    // The store exposes a safe, user-facing error message in the reservation drawer.
+  }
 }
 
 async function refreshStatus(): Promise<void> {
